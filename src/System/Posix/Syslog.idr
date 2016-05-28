@@ -16,6 +16,22 @@ close_log = foreign FFI_C "closelog" (IO ())
 open_log : (ident : String) -> (option : Int) -> (facility : Int) -> IO ()
 open_log ident option facility = foreign FFI_C "openlog" (String -> Int -> Int -> IO ()) ident option facility
 
+private
+set_log_mask_upto : Int -> IO Int
+set_log_mask_upto mask = foreign FFI_C "set_log_mask_upto" (Int -> IO Int) mask
+
+||| Set a mask of priorities that determine what syslog actually logs
+|||
+||| @mask - the priorities that will be set
+||| @upto - if true, the maske generated uses the LOG_UPTO macro which generates a mask with the bits on for a certain priority and all priorities above it:
+|||         The unfortunate naming of the macro is due to the fact that internally, higher numbers are used for lower message priorities.
+||| Return value is the previous mask
+set_log_mask : (mask : Int) -> (upto : Bool) -> IO Int
+set_log_mask mask upto = do
+  if upto then
+    set_log_mask_upto mask
+  else foreign FFI_C "setlogmask" (Int -> IO Int) mask
+  
 ||| Write a message to the system logger
 |||
 ||| @priority - bitwise OR of facility and level
